@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import https from "https";
+import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,25 @@ async function getAccessToken(): Promise<string | null> {
     }
 
     return new Promise((resolve) => {
+        console.log("Key length:", GOOGLE_PRIVATE_KEY.length);
+        console.log("Key starts with:", GOOGLE_PRIVATE_KEY.substring(0, 30));
+        
+        let privateKey;
+        try {
+            if (GOOGLE_PRIVATE_KEY.includes("-----BEGIN RSA PRIVATE KEY-----")) {
+                privateKey = GOOGLE_PRIVATE_KEY;
+            } else if (GOOGLE_PRIVATE_KEY.includes("-----BEGIN PRIVATE KEY-----")) {
+                privateKey = GOOGLE_PRIVATE_KEY.replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN RSA PRIVATE KEY-----")
+                                              .replace("-----END PRIVATE KEY-----", "-----END RSA PRIVATE KEY-----");
+            } else {
+                privateKey = GOOGLE_PRIVATE_KEY;
+            }
+        } catch (e) {
+            console.log("Error parsing key:", e);
+            resolve(null);
+            return;
+        }
+        
         const payload = {
             iss: GOOGLE_CLIENT_EMAIL,
             scope: SCOPES.join(" "),
@@ -30,45 +50,46 @@ async function getAccessToken(): Promise<string | null> {
         
         const signOptions: jwt.SignOptions = {
             algorithm: "RS256",
-            header: {
-                alg: "RS256",
-                typ: "JWT",
-            },
         };
         
-        const token = jwt.sign(payload, GOOGLE_PRIVATE_KEY, signOptions);
-        
-        const data = JSON.stringify({
-            grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-            assertion: token,
-        });
-        
-        const options = {
-            hostname: "oauth2.googleapis.com",
-            port: 443,
-            path: "/token",
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        };
-        
-        const req = https.request(options, (res) => {
-            let body = "";
-            res.on("data", (chunk) => body += chunk);
-            res.on("end", () => {
-                try {
-                    const result = JSON.parse(body);
-                    resolve(result.access_token || null);
-                } catch {
-                    resolve(null);
-                }
+        try {
+            const token = jwt.sign(payload, privateKey, signOptions);
+            
+            const data = JSON.stringify({
+                grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                assertion: token,
             });
-        });
-        
-        req.on("error", () => resolve(null));
-        req.write(data);
-        req.end();
+            
+            const options = {
+                hostname: "oauth2.googleapis.com",
+                port: 443,
+                path: "/token",
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            };
+            
+            const req = https.request(options, (res) => {
+                let body = "";
+                res.on("data", (chunk) => body += chunk);
+                res.on("end", () => {
+                    try {
+                        const result = JSON.parse(body);
+                        resolve(result.access_token || null);
+                    } catch {
+                        resolve(null);
+                    }
+                });
+            });
+            
+            req.on("error", () => resolve(null));
+            req.write(data);
+            req.end();
+        } catch (e) {
+            console.log("Error signing JWT:", e);
+            resolve(null);
+        }
     });
 }
 
