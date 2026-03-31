@@ -1,5 +1,7 @@
 import { google } from "googleapis";
 import { PrismaClient } from "@prisma/client";
+import jwt from "jsonwebtoken";
+import https from "https";
 
 const prisma = new PrismaClient();
 
@@ -20,15 +22,13 @@ async function getAccessToken(): Promise<string | null> {
     }
 
     return new Promise((resolve) => {
-        const jwt = require("jsonwebtoken");
-        
         const payload = {
             iss: GOOGLE_CLIENT_EMAIL,
             scope: SCOPES.join(" "),
             aud: "https://oauth2.googleapis.com/token",
         };
         
-        const signOptions = {
+        const signOptions: jwt.SignOptions = {
             algorithm: "RS256",
             header: {
                 alg: "RS256",
@@ -38,7 +38,6 @@ async function getAccessToken(): Promise<string | null> {
         
         const token = jwt.sign(payload, GOOGLE_PRIVATE_KEY, signOptions);
         
-        const https = require("https");
         const data = JSON.stringify({
             grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
             assertion: token,
@@ -54,9 +53,9 @@ async function getAccessToken(): Promise<string | null> {
             },
         };
         
-        const req = https.request(options, (res: any) => {
+        const req = https.request(options, (res) => {
             let body = "";
-            res.on("data", (chunk: any) => body += chunk);
+            res.on("data", (chunk) => body += chunk);
             res.on("end", () => {
                 try {
                     const result = JSON.parse(body);
