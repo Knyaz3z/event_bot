@@ -2,7 +2,6 @@ import { google } from "googleapis";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import https from "https";
-import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -10,6 +9,19 @@ let GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY || "";
 if (GOOGLE_PRIVATE_KEY.includes("\\n")) {
     GOOGLE_PRIVATE_KEY = GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
 }
+
+if (GOOGLE_PRIVATE_KEY.includes('"type": "service_account"')) {
+    try {
+        const keyData = JSON.parse(GOOGLE_PRIVATE_KEY);
+        GOOGLE_PRIVATE_KEY = keyData.private_key;
+        console.log("Extracted private_key from JSON");
+    } catch (e) {
+        console.log("Failed to parse JSON key:", e);
+    }
+}
+
+console.log("Private key length:", GOOGLE_PRIVATE_KEY.length);
+console.log("Private key starts with:", GOOGLE_PRIVATE_KEY.substring(0, 30));
 
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL || "";
 const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
@@ -23,25 +35,6 @@ async function getAccessToken(): Promise<string | null> {
     }
 
     return new Promise((resolve) => {
-        console.log("Key length:", GOOGLE_PRIVATE_KEY.length);
-        console.log("Key starts with:", GOOGLE_PRIVATE_KEY.substring(0, 30));
-        
-        let privateKey;
-        try {
-            if (GOOGLE_PRIVATE_KEY.includes("-----BEGIN RSA PRIVATE KEY-----")) {
-                privateKey = GOOGLE_PRIVATE_KEY;
-            } else if (GOOGLE_PRIVATE_KEY.includes("-----BEGIN PRIVATE KEY-----")) {
-                privateKey = GOOGLE_PRIVATE_KEY.replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN RSA PRIVATE KEY-----")
-                                              .replace("-----END PRIVATE KEY-----", "-----END RSA PRIVATE KEY-----");
-            } else {
-                privateKey = GOOGLE_PRIVATE_KEY;
-            }
-        } catch (e) {
-            console.log("Error parsing key:", e);
-            resolve(null);
-            return;
-        }
-        
         const payload = {
             iss: GOOGLE_CLIENT_EMAIL,
             scope: SCOPES.join(" "),
@@ -53,7 +46,7 @@ async function getAccessToken(): Promise<string | null> {
         };
         
         try {
-            const token = jwt.sign(payload, privateKey, signOptions);
+            const token = jwt.sign(payload, GOOGLE_PRIVATE_KEY, signOptions);
             
             const data = JSON.stringify({
                 grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
