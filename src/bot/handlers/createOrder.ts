@@ -186,7 +186,9 @@ export function setupCreateOrder(bot: Bot) {
         // создание заказа
         if (!waitingForOrderUsers.has(userId)) return;
 
+        console.log("Creating order, parsing text...");
         const data = parseOrder(text);
+        console.log("Parsed data:", data);
 
         const order = await prisma.order.create({
             data: {
@@ -194,6 +196,8 @@ export function setupCreateOrder(bot: Bot) {
                 text: buildOrderText(data),
             },
         });
+        
+        console.log("Order created:", order.id);
 
         waitingForOrderUsers.delete(userId);
 
