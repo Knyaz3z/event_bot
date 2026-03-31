@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { PrismaClient } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import https from "https";
 
 const prisma = new PrismaClient();
@@ -24,6 +24,13 @@ const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 
+function base64UrlEncode(buffer: Buffer): string {
+    return buffer.toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
+}
+
 async function getAccessToken(): Promise<string | null> {
     if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
         console.log("Missing Google credentials");
@@ -31,18 +38,29 @@ async function getAccessToken(): Promise<string | null> {
     }
 
     return new Promise((resolve) => {
+        const header = {
+            alg: "RS256",
+            typ: "JWT",
+        };
+        
         const payload = {
             iss: GOOGLE_CLIENT_EMAIL,
             scope: SCOPES.join(" "),
             aud: "https://oauth2.googleapis.com/token",
         };
         
-        const signOptions: jwt.SignOptions = {
-            algorithm: "RS256",
-        };
+        const encodedHeader = base64UrlEncode(Buffer.from(JSON.stringify(header)));
+        const encodedPayload = base64UrlEncode(Buffer.from(JSON.stringify(payload)));
+        
+        const signatureInput = `${encodedHeader}.${encodedPayload}`;
         
         try {
-            const token = jwt.sign(payload, GOOGLE_PRIVATE_KEY, signOptions);
+            const signer = crypto.createSign("RSA-SHA256");
+            signer.update(signatureInput);
+            const signature = signer.sign(GOOGLE_PRIVATE_KEY);
+            const encodedSignature = base64UrlEncode(signature);
+            
+            const token = `${signatureInput}.${encodedSignature}`;
             
             const data = JSON.stringify({
                 grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
