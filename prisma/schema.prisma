@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  status String @default("open")
+  text   String
+  slots  Int @default(1)
+
+  date         String?
+  time         String?
+  address      String?
+  price        String?
+  people       String?
+  comment      String?
+  tariff       String?
+  clientContact String?
+  totalCost    Float?
+  remainingPayment Float?
+
+  hosts OrderHost[]
+
+  createdAt DateTime @default(now())
+}
+
+model OrderHost {
+  orderId Int
+  hostId  Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  host  Host  @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  @@id([orderId, hostId])
+}
+
+model Host {
+  id         Int     @id @default(autoincrement())
+  name       String  @default("Без имени")
+  telegramId String  @unique
+  isAdmin    Boolean @default(false)
+
+  orders OrderHost[]
+}

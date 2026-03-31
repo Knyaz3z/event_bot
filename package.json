@@ -1,0 +1,50 @@
+{
+  "name": "event-bot",
+
+  "version": "1.0.0",
+
+  "description": "",
+
+  "main": "index.js",
+
+  "type": "module",
+
+  "scripts": {
+    "start": "node dist/bot/index.js",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+
+  },
+
+  "keywords": [],
+
+  "author": "",
+
+  "license": "ISC",
+
+  "dependencies": {
+
+    "@prisma/client": "^5.22.0",
+
+    "dotenv": "^17.3.1",
+
+    "grammy": "^1.41.1",
+
+    "prisma": "^5.22.0"
+
+  },
+
+  "devDependencies": {
+
+    "@types/node": "^25.5.0",
+
+    "ts-node": "^10.9.2",
+
+    "tsx": "^4.21.0",
+
+    "typescript": "^6.0.2"
+
+  }
+
+}
+
