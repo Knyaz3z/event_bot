@@ -133,6 +133,7 @@ export function setupCreateOrder(bot: Bot) {
         if (!userId) return;
 
         const text = ctx.message.text;
+        console.log("message:text from user", userId, "in waiting:", waitingForOrderUsers.has(userId));
 
         // редактирование заказа
         const editOrderId = waitingForEditUsers.get(userId);
