@@ -10,9 +10,9 @@
   "type": "module",
 
   "scripts": {
-    "start": "node dist/bot/index.js",
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc && npx prisma generate",
+    "start": "npx prisma migrate deploy && node dist/bot/index.js",
+    "dev": "tsx src/bot/index.ts"
 
   },
 
@@ -44,6 +44,14 @@
 
     "typescript": "^6.0.2"
 
+  },
+
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "target": "ES2020",
+    "esModuleInterop": true
   }
 
 }

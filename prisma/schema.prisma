@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,17 +12,17 @@ model Order {
 
   status String @default("open")
   text   String
-  slots  Int @default(1)
+  slots  Int    @default(1)
 
-  date         String?
-  time         String?
-  address      String?
-  price        String?
-  people       String?
-  comment      String?
-  tariff       String?
-  clientContact String?
-  totalCost    Float?
+  date             String?
+  time             String?
+  address          String?
+  price            String?
+  people           String?
+  comment          String?
+  tariff           String?
+  clientContact    String?
+  totalCost        Float?
   remainingPayment Float?
 
   hosts OrderHost[]
