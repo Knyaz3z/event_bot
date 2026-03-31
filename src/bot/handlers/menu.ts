@@ -107,13 +107,9 @@ export function setupMenu(bot: Bot) {
         const userId = ctx.from?.id;
         if (!userId) return;
 
-        console.log("menu_neworder clicked by user:", userId);
-
         const host = await prisma.host.findUnique({
             where: { telegramId: String(userId) },
         });
-
-        console.log("host found:", host, "isAdmin:", host?.isAdmin);
 
         if (!host?.isAdmin && userId !== MANAGER_ID) {
             return ctx.answerCallbackQuery({ text: "Нет доступа", show_alert: true });
@@ -122,9 +118,7 @@ export function setupMenu(bot: Bot) {
         await ctx.answerCallbackQuery();
         await ctx.editMessageText("Отправь заказ одним сообщением 👇");
         
-        console.log("adding user to waitingForOrderUsers:", userId);
         waitingForOrderUsers.add(userId);
-        console.log("waitingForOrderUsers now:", [...waitingForOrderUsers]);
     });
 
     bot.callbackQuery("menu_upcoming", async (ctx) => {
@@ -422,7 +416,6 @@ export function setupMenu(bot: Bot) {
     });
 
     bot.on("message:text", async (ctx, next) => {
-        console.log("menu message:text handler fired for user:", ctx.from?.id);
         const userId = ctx.from?.id;
         if (!userId) return next();
 

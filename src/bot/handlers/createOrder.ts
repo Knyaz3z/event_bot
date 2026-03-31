@@ -128,12 +128,10 @@ export function setupCreateOrder(bot: Bot) {
     });
 
     bot.on("message:text", async (ctx, next) => {
-        console.log("message:text handler fired!");
         const userId = ctx.from?.id;
         if (!userId) return next();
 
         const text = ctx.message.text;
-        console.log("message:text from user", userId, "in waiting:", waitingForOrderUsers.has(userId));
 
         // редактирование заказа
         const editOrderId = waitingForEditUsers.get(userId);
@@ -186,9 +184,7 @@ export function setupCreateOrder(bot: Bot) {
         // создание заказа
         if (!waitingForOrderUsers.has(userId)) return next();
 
-        console.log("Creating order, parsing text...");
         const data = parseOrder(text);
-        console.log("Parsed data:", data);
 
         const order = await prisma.order.create({
             data: {
@@ -196,8 +192,6 @@ export function setupCreateOrder(bot: Bot) {
                 text: buildOrderText(data),
             },
         });
-        
-        console.log("Order created:", order.id);
 
         waitingForOrderUsers.delete(userId);
 
