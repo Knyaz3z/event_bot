@@ -32,8 +32,8 @@ function parseOrder(text: string) {
     };
 }
 
-const waitingForOrderUsers = new Set<number>();
-const waitingForEditUsers = new Map<number, number>();
+export const waitingForOrderUsers = new Set<number>();
+export const waitingForEditUsers = new Map<number, number>();
 
 function buildOrderText(order: any): string {
     const parts = [];

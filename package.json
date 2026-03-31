@@ -12,8 +12,8 @@
   "scripts": {
     "build": "tsc && npx prisma generate",
     "start": "npx prisma migrate deploy && node dist/bot/index.js",
-    "dev": "tsx src/bot/index.ts"
-
+    "dev": "tsx src/bot/index.ts",
+    "clear-orders": "tsx scripts/clear-orders.ts"
   },
 
   "keywords": [],

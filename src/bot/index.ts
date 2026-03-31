@@ -4,14 +4,11 @@ import {PrismaClient} from "@prisma/client";
 import {setupCreateOrder} from "./handlers/createOrder.js";
 import {setupMyOrders} from "./handlers/myOrders.js";
 import {setupReminders, startNotifications} from "./handlers/notifications.js";
+import {setupMenu} from "./handlers/menu.js";
 
 export const prisma = new PrismaClient();
 
 const bot = new Bot(process.env.BOT_TOKEN!);
-
-bot.command("start", (ctx) => {
-    ctx.reply("Бот запущен 🚀");
-});
 
 bot.command("register", async (ctx) => {
     const userId = ctx.from?.id;
@@ -36,6 +33,7 @@ bot.command("register", async (ctx) => {
     ctx.reply("Ты зарегистрирован как ведущий ✅");
 });
 
+setupMenu(bot);
 setupReminders(bot);
 setupMyOrders(bot);
 setupCreateOrder(bot);
