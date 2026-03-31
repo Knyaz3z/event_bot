@@ -13,21 +13,64 @@ const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 
-function getAuth() {
+async function getAccessToken(): Promise<string | null> {
     if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
-        console.log("Missing Google credentials - PRIVATE_KEY:", !!GOOGLE_PRIVATE_KEY, "CLIENT_EMAIL:", !!GOOGLE_CLIENT_EMAIL);
+        console.log("Missing Google credentials");
         return null;
     }
-    
-    console.log("Creating JWT auth with email:", GOOGLE_CLIENT_EMAIL);
-    
-    const auth = new google.auth.JWT({
-        email: GOOGLE_CLIENT_EMAIL,
-        key: GOOGLE_PRIVATE_KEY,
-        scopes: SCOPES,
+
+    return new Promise((resolve) => {
+        const jwt = require("jsonwebtoken");
+        
+        const payload = {
+            iss: GOOGLE_CLIENT_EMAIL,
+            scope: SCOPES.join(" "),
+            aud: "https://oauth2.googleapis.com/token",
+        };
+        
+        const signOptions = {
+            algorithm: "RS256",
+            header: {
+                alg: "RS256",
+                typ: "JWT",
+            },
+        };
+        
+        const token = jwt.sign(payload, GOOGLE_PRIVATE_KEY, signOptions);
+        
+        const https = require("https");
+        const data = JSON.stringify({
+            grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            assertion: token,
+        });
+        
+        const options = {
+            hostname: "oauth2.googleapis.com",
+            port: 443,
+            path: "/token",
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        };
+        
+        const req = https.request(options, (res: any) => {
+            let body = "";
+            res.on("data", (chunk: any) => body += chunk);
+            res.on("end", () => {
+                try {
+                    const result = JSON.parse(body);
+                    resolve(result.access_token || null);
+                } catch {
+                    resolve(null);
+                }
+            });
+        });
+        
+        req.on("error", () => resolve(null));
+        req.write(data);
+        req.end();
     });
-    
-    return auth;
 }
 
 function parseGoogleEvent(event: any) {
@@ -112,15 +155,17 @@ export async function syncFromGoogleCalendar(): Promise<number> {
     }
 
     try {
-        const auth = getAuth();
-        if (!auth) {
-            console.log("Failed to create auth");
+        console.log("Getting access token...");
+        const accessToken = await getAccessToken();
+        
+        if (!accessToken) {
+            console.log("Failed to get access token");
             return 0;
         }
         
-        console.log("Auth created successfully, fetching calendar events...");
-        const calendar = google.calendar({ version: "v3", auth });
-
+        console.log("Got access token, fetching calendar events...");
+        
+        const calendar = google.calendar({ version: "v3" });
         const now = new Date();
         const future = new Date();
         future.setFullYear(future.getFullYear() + 1);
@@ -131,6 +176,7 @@ export async function syncFromGoogleCalendar(): Promise<number> {
             timeMax: future.toISOString(),
             singleEvents: true,
             orderBy: "startTime",
+            auth: accessToken,
         });
 
         const events = response.data.items || [];
@@ -176,27 +222,4 @@ export async function syncFromGoogleCalendar(): Promise<number> {
         console.error("Error syncing from Google Calendar:", error);
         return 0;
     }
-}
-
-export async function sendToAllHosts(orderId: number, bot: any): Promise<number> {
-    const order = await prisma.order.findUnique({
-        where: { id: orderId },
-    });
-
-    if (!order) return 0;
-
-    const hosts = await prisma.host.findMany();
-    let sent = 0;
-
-    for (const host of hosts) {
-        try {
-            await bot.api.sendMessage(
-                host.telegramId,
-                `📢 Новый заказ №${order.id}:\n\n${order.text || ""}`
-            );
-            sent++;
-        } catch (e) {}
-    }
-
-    return sent;
 }

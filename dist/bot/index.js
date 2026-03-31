@@ -4,11 +4,10 @@ import { PrismaClient } from "@prisma/client";
 import { setupCreateOrder } from "./handlers/createOrder.js";
 import { setupMyOrders } from "./handlers/myOrders.js";
 import { setupReminders, startNotifications } from "./handlers/notifications.js";
+import { setupMenu } from "./handlers/menu.js";
+import { syncFromGoogleCalendar } from "../googleCalendar.js";
 export const prisma = new PrismaClient();
 const bot = new Bot(process.env.BOT_TOKEN);
-bot.command("start", (ctx) => {
-    ctx.reply("Бот запущен 🚀");
-});
 bot.command("register", async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId)
@@ -29,8 +28,28 @@ bot.command("register", async (ctx) => {
     });
     ctx.reply("Ты зарегистрирован как ведущий ✅");
 });
+setupMenu(bot);
 setupReminders(bot);
 setupMyOrders(bot);
 setupCreateOrder(bot);
+bot.command("sync", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId)
+        return;
+    const host = await prisma.host.findUnique({
+        where: { telegramId: String(userId) },
+    });
+    if (!host?.isAdmin) {
+        return ctx.reply("Нет доступа 🔒");
+    }
+    await ctx.reply("Синхронизирую с Google Calendar...");
+    const synced = await syncFromGoogleCalendar();
+    await ctx.reply(`Синхронизировано ${synced} событий ✅`);
+});
 bot.start();
 startNotifications(bot);
+syncFromGoogleCalendar().then(count => {
+    if (count > 0) {
+        console.log(`Synced ${count} events from Google Calendar on startup`);
+    }
+});

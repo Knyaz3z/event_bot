@@ -1,7 +1,6 @@
 import {Bot, InlineKeyboard} from "grammy";
 import {prisma} from "../index.js";
 import { waitingForOrderUsers, waitingForEditUsers } from "./createOrder.js";
-import { sendToAllHosts } from "../../googleCalendar.js";
 
 const MANAGER_ID = Number(process.env.MANAGER_ID);
 

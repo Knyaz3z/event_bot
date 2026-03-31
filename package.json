@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc && npx prisma generate",
-    "start": "NODE_OPTIONS=--openssl-legacy-provider npx prisma migrate deploy && node dist/bot/index.js",
+    "start": "export NODE_OPTIONS=--openssl-legacy-provider && npx prisma migrate deploy && node dist/bot/index.js",
     "dev": "NODE_OPTIONS=--openssl-legacy-provider tsx src/bot/index.ts",
     "clear-orders": "tsx scripts/clear-orders.ts"
   },
@@ -18,9 +18,11 @@
     "dotenv": "^17.3.1",
     "googleapis": "^171.4.0",
     "grammy": "^1.41.1",
+    "jsonwebtoken": "^9.0.3",
     "prisma": "^5.22.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",

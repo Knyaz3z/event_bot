@@ -26,8 +26,8 @@ function parseOrder(text) {
         slots: slotsVal >= 1 ? slotsVal : 1,
     };
 }
-const waitingForOrderUsers = new Set();
-const waitingForEditUsers = new Map();
+export const waitingForOrderUsers = new Set();
+export const waitingForEditUsers = new Map();
 function buildOrderText(order) {
     const parts = [];
     if (order.tariff)
@@ -132,11 +132,10 @@ export function setupCreateOrder(bot) {
         waitingForOrderUsers.add(userId);
         await ctx.reply("Отправь заказ одним сообщением 👇");
     });
-    // обработка текста (создание или редактирование)
-    bot.on("message:text", async (ctx) => {
+    bot.on("message:text", async (ctx, next) => {
         const userId = ctx.from?.id;
         if (!userId)
-            return;
+            return next();
         const text = ctx.message.text;
         // редактирование заказа
         const editOrderId = waitingForEditUsers.get(userId);
@@ -189,7 +188,7 @@ export function setupCreateOrder(bot) {
         }
         // создание заказа
         if (!waitingForOrderUsers.has(userId))
-            return;
+            return next();
         const data = parseOrder(text);
         const order = await prisma.order.create({
             data: {
@@ -209,6 +208,7 @@ export function setupCreateOrder(bot) {
             });
         }
         await ctx.reply("Заказ отправлен ведущим ✅");
+        return next();
     });
     // принять заказ
     bot.callbackQuery(/^accept_(\d+)$/, async (ctx) => {
