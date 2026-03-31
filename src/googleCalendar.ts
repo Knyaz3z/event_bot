@@ -6,18 +6,14 @@ import https from "https";
 const prisma = new PrismaClient();
 
 let GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY || "";
-if (GOOGLE_PRIVATE_KEY.includes("\\n")) {
-    GOOGLE_PRIVATE_KEY = GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
+const GOOGLE_PRIVATE_KEY_ONLY = process.env.GOOGLE_PRIVATE_KEY_ONLY || "";
+
+if (GOOGLE_PRIVATE_KEY_ONLY) {
+    GOOGLE_PRIVATE_KEY = GOOGLE_PRIVATE_KEY_ONLY;
 }
 
-if (GOOGLE_PRIVATE_KEY.includes('"type": "service_account"')) {
-    try {
-        const keyData = JSON.parse(GOOGLE_PRIVATE_KEY);
-        GOOGLE_PRIVATE_KEY = keyData.private_key;
-        console.log("Extracted private_key from JSON");
-    } catch (e) {
-        console.log("Failed to parse JSON key:", e);
-    }
+if (GOOGLE_PRIVATE_KEY.includes("\\n")) {
+    GOOGLE_PRIVATE_KEY = GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
 }
 
 console.log("Private key length:", GOOGLE_PRIVATE_KEY.length);
