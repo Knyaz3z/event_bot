@@ -422,6 +422,7 @@ export function setupMenu(bot: Bot) {
     });
 
     bot.on("message:text", async (ctx) => {
+        console.log("menu message:text handler fired for user:", ctx.from?.id);
         const userId = ctx.from?.id;
         if (!userId) return;
 

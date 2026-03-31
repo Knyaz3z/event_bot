@@ -129,6 +129,7 @@ export function setupCreateOrder(bot: Bot) {
 
     // обработка текста (создание или редактирование)
     bot.on("message:text", async (ctx) => {
+        console.log("message:text handler fired!");
         const userId = ctx.from?.id;
         if (!userId) return;
 
