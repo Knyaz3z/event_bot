@@ -127,11 +127,10 @@ export function setupCreateOrder(bot: Bot) {
         await ctx.reply("Отправь заказ одним сообщением 👇");
     });
 
-    // обработка текста (создание или редактирование)
-    bot.on("message:text", async (ctx) => {
+    bot.on("message:text", async (ctx, next) => {
         console.log("message:text handler fired!");
         const userId = ctx.from?.id;
-        if (!userId) return;
+        if (!userId) return next();
 
         const text = ctx.message.text;
         console.log("message:text from user", userId, "in waiting:", waitingForOrderUsers.has(userId));
@@ -185,7 +184,7 @@ export function setupCreateOrder(bot: Bot) {
         }
 
         // создание заказа
-        if (!waitingForOrderUsers.has(userId)) return;
+        if (!waitingForOrderUsers.has(userId)) return next();
 
         console.log("Creating order, parsing text...");
         const data = parseOrder(text);
@@ -221,6 +220,7 @@ export function setupCreateOrder(bot: Bot) {
         }
 
         await ctx.reply("Заказ отправлен ведущим ✅");
+        return next();
     });
 
     // принять заказ

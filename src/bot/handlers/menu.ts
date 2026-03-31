@@ -421,10 +421,10 @@ export function setupMenu(bot: Bot) {
         });
     });
 
-    bot.on("message:text", async (ctx) => {
+    bot.on("message:text", async (ctx, next) => {
         console.log("menu message:text handler fired for user:", ctx.from?.id);
         const userId = ctx.from?.id;
-        if (!userId) return;
+        if (!userId) return next();
 
         if (pendingEditById.has(userId)) {
             const text = ctx.message.text;
@@ -443,13 +443,14 @@ export function setupMenu(bot: Bot) {
             }
 
             pendingEditById.delete(userId);
-            
-            const { waitingForEditUsers } = await import("./createOrder.js");
             waitingForEditUsers.set(userId, orderId);
 
             await ctx.reply(
                 `Редактирование заказа №${orderId}\n\nТекущие данные:\n${order.text || buildFullOrderText(order)}\n\nОтправь новые данные:`
             );
+            return;
         }
+        
+        return next();
     });
 }
