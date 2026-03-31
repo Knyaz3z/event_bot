@@ -14,11 +14,20 @@ const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
 const SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 
 function getAuth() {
-    return new google.auth.JWT({
+    if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
+        console.log("Missing Google credentials - PRIVATE_KEY:", !!GOOGLE_PRIVATE_KEY, "CLIENT_EMAIL:", !!GOOGLE_CLIENT_EMAIL);
+        return null;
+    }
+    
+    console.log("Creating JWT auth with email:", GOOGLE_CLIENT_EMAIL);
+    
+    const auth = new google.auth.JWT({
         email: GOOGLE_CLIENT_EMAIL,
         key: GOOGLE_PRIVATE_KEY,
         scopes: SCOPES,
     });
+    
+    return auth;
 }
 
 function parseGoogleEvent(event: any) {
@@ -104,6 +113,12 @@ export async function syncFromGoogleCalendar(): Promise<number> {
 
     try {
         const auth = getAuth();
+        if (!auth) {
+            console.log("Failed to create auth");
+            return 0;
+        }
+        
+        console.log("Auth created successfully, fetching calendar events...");
         const calendar = google.calendar({ version: "v3", auth });
 
         const now = new Date();

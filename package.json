@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc && npx prisma generate",
-    "start": "npx prisma migrate deploy && node --openssl-legacy-provider dist/bot/index.js",
-    "dev": "tsx src/bot/index.ts",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider npx prisma migrate deploy && node dist/bot/index.js",
+    "dev": "NODE_OPTIONS=--openssl-legacy-provider tsx src/bot/index.ts",
     "clear-orders": "tsx scripts/clear-orders.ts"
   },
   "keywords": [],
