@@ -10,6 +10,7 @@ datasource db {
 model Order {
   id Int @id @default(autoincrement())
 
+  googleEventId String?
   status String @default("open")
   text   String
   slots  Int    @default(1)

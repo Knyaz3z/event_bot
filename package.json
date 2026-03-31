@@ -1,51 +1,31 @@
 {
   "name": "event-bot",
-
   "version": "1.1.0",
-
   "description": "",
-
   "main": "index.js",
-
   "type": "module",
-
   "scripts": {
     "build": "tsc && npx prisma generate",
     "start": "npx prisma migrate deploy && node dist/bot/index.js",
     "dev": "tsx src/bot/index.ts",
     "clear-orders": "tsx scripts/clear-orders.ts"
   },
-
   "keywords": [],
-
   "author": "",
-
   "license": "ISC",
-
   "dependencies": {
-
     "@prisma/client": "^5.22.0",
-
     "dotenv": "^17.3.1",
-
+    "googleapis": "^171.4.0",
     "grammy": "^1.41.1",
-
     "prisma": "^5.22.0"
-
   },
-
   "devDependencies": {
-
     "@types/node": "^25.5.0",
-
     "ts-node": "^10.9.2",
-
     "tsx": "^4.21.0",
-
     "typescript": "^6.0.2"
-
   },
-
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -53,6 +33,4 @@
     "target": "ES2020",
     "esModuleInterop": true
   }
-
 }
-

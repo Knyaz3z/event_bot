@@ -1,6 +1,7 @@
 import {Bot, InlineKeyboard} from "grammy";
 import {prisma} from "../index.js";
 import { waitingForOrderUsers, waitingForEditUsers } from "./createOrder.js";
+import { sendToAllHosts } from "../../googleCalendar.js";
 
 const MANAGER_ID = Number(process.env.MANAGER_ID);
 
@@ -58,15 +59,23 @@ function buildUpcomingOrdersKeyboard(orders: any[]) {
     return keyboard;
 }
 
-function buildOrderActionsKeyboard(orderId: number) {
-    return new InlineKeyboard()
+function buildOrderActionsKeyboard(orderId: number, hasGoogleId: boolean = false) {
+    const keyboard = new InlineKeyboard()
         .text("🗑️ Удалить", `delete_${orderId}`)
-        .row()
-        .text("✏️ Редактировать", `edit_${orderId}`)
-        .row()
+        .row();
+    
+    if (hasGoogleId) {
+        keyboard.text("📢 Предложить всем ведущим", `sendall_${orderId}`).row();
+    } else {
+        keyboard.text("✏️ Редактировать", `edit_${orderId}`).row();
+    }
+    
+    keyboard
         .text("👤 Назначить ведущего", `assign_${orderId}`)
         .row()
         .text("🔙 Назад", "back_orders");
+    
+    return keyboard;
 }
 
 function buildHostsKeyboard(orderId: number) {
@@ -169,10 +178,12 @@ export function setupMenu(bot: Bot) {
             ? order.hosts.map(h => h.host.name).join(", ")
             : "не назначены";
 
+        const hasGoogleId = !!order.googleEventId;
+
         await ctx.editMessageText(
             `📦 Заказ №${orderId}\n\n${buildFullOrderText(order)}\n\n👤 Ведущие: ${hostNames}`,
             {
-                reply_markup: buildOrderActionsKeyboard(orderId),
+                reply_markup: buildOrderActionsKeyboard(orderId, hasGoogleId),
             }
         );
     });
@@ -190,6 +201,31 @@ export function setupMenu(bot: Bot) {
         await ctx.editMessageText("Заказ удалён ✅", {
             reply_markup: new InlineKeyboard().text("🔙 К заказам", "menu_upcoming"),
         });
+    });
+
+    bot.callbackQuery(/^sendall_(\d+)$/, async (ctx) => {
+        const orderId = Number(ctx.match[1]);
+        
+        const order = await prisma.order.findUnique({ where: { id: orderId } });
+        
+        if (!order) {
+            return ctx.answerCallbackQuery({ text: "Заказ не найден", show_alert: true });
+        }
+
+        const hosts = await prisma.host.findMany();
+        let sent = 0;
+
+        for (const host of hosts) {
+            try {
+                await ctx.api.sendMessage(
+                    host.telegramId,
+                    `📢 Новый заказ №${order.id}:\n\n${order.text || ""}`
+                );
+                sent++;
+            } catch (e) {}
+        }
+
+        await ctx.answerCallbackQuery(`Предложено ${sent} ведущим ✅`);
     });
 
     bot.callbackQuery(/^edit_(\d+)$/, async (ctx) => {
