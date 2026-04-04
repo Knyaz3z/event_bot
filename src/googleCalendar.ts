@@ -227,7 +227,10 @@ export async function syncFromGoogleCalendar(): Promise<number> {
             timeMax: future.toISOString(),
             singleEvents: true,
             orderBy: "startTime",
-            auth: accessToken,
+        }, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
         });
 
         const events = response.data.items || [];
