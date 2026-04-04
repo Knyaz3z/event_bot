@@ -19,7 +19,10 @@ if (GOOGLE_PRIVATE_KEY.includes("\\n")) {
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL || "";
 const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
 
-const SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
+const SCOPES = [
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
+];
 
 function base64UrlEncode(data: string | Buffer): string {
     const buffer = typeof data === "string" ? Buffer.from(data) : data;
@@ -285,5 +288,87 @@ export async function syncFromGoogleCalendar(): Promise<number> {
     } catch (error) {
         console.error("Google Calendar: sync error -", error);
         return 0;
+    }
+}
+
+export async function createGoogleCalendarEvent(orderData: {
+    date: string | null | undefined;
+    time: string | null | undefined;
+    address: string | null | undefined;
+    tariff: string | null | undefined;
+    comment: string | null | undefined;
+    clientContact: string | null | undefined;
+    people: string | null | undefined;
+    totalCost: number | null | undefined;
+    advancePayment: number | null | undefined;
+    remainingPayment: number | null | undefined;
+    extension: string | null | undefined;
+}): Promise<string | null> {
+    if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
+        console.log("Google Calendar: not configured for writing");
+        return null;
+    }
+
+    try {
+        const accessToken = await getAccessToken();
+        
+        if (!accessToken) {
+            console.log("Google Calendar: failed to get access token for writing");
+            return null;
+        }
+
+        const calendar = google.calendar({ version: "v3" });
+
+        const dateMatch = orderData.date?.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        const timeMatch = orderData.time?.match(/(\d{2}):(\d{2})/);
+        
+        if (!dateMatch || !timeMatch) {
+            console.log("Google Calendar: invalid date/time format");
+            return null;
+        }
+
+        const startDateTime = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${timeMatch[1]}:${timeMatch[2]}:00`;
+        
+        const endDateTime = orderData.time 
+            ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${Number(timeMatch[1]) + 1}:${timeMatch[2]}:00`
+            : startDateTime;
+
+        const description = [
+            orderData.tariff ? `Тариф: ${orderData.tariff}` : null,
+            orderData.people ? `Кол-во: ${orderData.people}` : null,
+            orderData.comment ? `Комментарий: ${orderData.comment}` : null,
+            orderData.clientContact ? `Контакт: ${orderData.clientContact}` : null,
+            orderData.totalCost ? `Стоимость: ${orderData.totalCost}` : null,
+            orderData.advancePayment ? `Предоплата: ${orderData.advancePayment}` : null,
+            orderData.remainingPayment ? `Остаток: ${orderData.remainingPayment}` : null,
+            orderData.extension ? `Продление: ${orderData.extension}` : null,
+        ].filter(Boolean).join("\n");
+
+        const response = await calendar.events.insert({
+            calendarId: GOOGLE_CALENDAR_ID,
+            requestBody: {
+                summary: orderData.tariff || "Мероприятие",
+                description: description,
+                location: orderData.address || "",
+                start: {
+                    dateTime: startDateTime,
+                    timeZone: "Europe/Moscow",
+                },
+                end: {
+                    dateTime: endDateTime,
+                    timeZone: "Europe/Moscow",
+                },
+            },
+        }, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        console.log(`Google Calendar: created event ${response.data.id}`);
+        return response.data.id || null;
+    } catch (error) {
+        console.error("Google Calendar: error creating event -", error);
+        return null;
     }
 }

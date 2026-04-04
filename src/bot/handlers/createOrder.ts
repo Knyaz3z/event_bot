@@ -1,16 +1,17 @@
 import {Bot, InlineKeyboard} from "grammy";
 import {prisma} from "../index.js";
+import {createGoogleCalendarEvent} from "../../googleCalendar.js";
 
 const MANAGER_ID = Number(process.env.MANAGER_ID);
 
 // простой парсер
 function parseOrder(text: string) {
-    const get = (key: string) => {
+    const get = (key: string): string | null => {
         const regex = new RegExp(`${key}:\\s*(.*)`, "i");
-        return text.match(regex)?.[1]?.trim();
+        return text.match(regex)?.[1]?.trim() ?? null;
     };
 
-    const getNumber = (key: string) => {
+    const getNumber = (key: string): number | null => {
         const val = get(key);
         return val ? parseFloat(val.replace(/[^\d.]/g, "")) : null;
     };
@@ -189,16 +190,32 @@ export function setupCreateOrder(bot: Bot) {
 
         const data = parseOrder(text);
 
+        const googleEventId = await createGoogleCalendarEvent({
+            date: data.date,
+            time: data.time,
+            address: data.address,
+            tariff: data.tariff,
+            comment: data.comment,
+            clientContact: data.clientContact,
+            people: data.people,
+            totalCost: data.totalCost,
+            advancePayment: data.advancePayment,
+            remainingPayment: data.remainingPayment,
+            extension: data.extension,
+        });
+
         const order = await prisma.order.create({
             data: {
                 ...data,
                 text: buildOrderText(data),
+                googleEventId: googleEventId,
             },
         });
 
         waitingForOrderUsers.delete(userId);
 
-        await ctx.reply("Заказ сохранён ✅");
+        const googleMsg = googleEventId ? " и в Google Calendar ✅" : "";
+        await ctx.reply(`Заказ сохранён${googleMsg}`);
 
         const hosts = await prisma.host.findMany();
 
