@@ -16,15 +16,13 @@ if (GOOGLE_PRIVATE_KEY.includes("\\n")) {
     GOOGLE_PRIVATE_KEY = GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
 }
 
-console.log("Private key length:", GOOGLE_PRIVATE_KEY.length);
-console.log("Private key starts with:", GOOGLE_PRIVATE_KEY.substring(0, 30));
-
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL || "";
 const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 
-function base64UrlEncode(buffer: Buffer): string {
+function base64UrlEncode(data: string | Buffer): string {
+    const buffer = typeof data === "string" ? Buffer.from(data) : data;
     return buffer.toString("base64")
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
@@ -37,7 +35,11 @@ async function getAccessToken(): Promise<string | null> {
         return null;
     }
 
+    console.log("Key length:", GOOGLE_PRIVATE_KEY.length);
+
     return new Promise((resolve) => {
+        const now = Math.floor(Date.now() / 1000);
+        
         const header = {
             alg: "RS256",
             typ: "JWT",
@@ -45,24 +47,34 @@ async function getAccessToken(): Promise<string | null> {
         
         const payload = {
             iss: GOOGLE_CLIENT_EMAIL,
+            sub: GOOGLE_CLIENT_EMAIL,
             scope: SCOPES.join(" "),
             aud: "https://oauth2.googleapis.com/token",
+            iat: now,
+            exp: now + 3600,
         };
         
-        const encodedHeader = base64UrlEncode(Buffer.from(JSON.stringify(header)));
-        const encodedPayload = base64UrlEncode(Buffer.from(JSON.stringify(payload)));
+        const encodedHeader = base64UrlEncode(JSON.stringify(header));
+        const encodedPayload = base64UrlEncode(JSON.stringify(payload));
         
         const signatureInput = `${encodedHeader}.${encodedPayload}`;
         
         try {
-            const signer = crypto.createSign("RSA-SHA256");
-            signer.update(signatureInput);
-            const signature = signer.sign(GOOGLE_PRIVATE_KEY);
-            const encodedSignature = base64UrlEncode(signature);
+            const sign = crypto.createSign("RSA-SHA256");
+            sign.update(signatureInput);
+            
+            let key = GOOGLE_PRIVATE_KEY;
+            if (key.includes("-----BEGIN PRIVATE KEY-----")) {
+                key = key.replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN RSA PRIVATE KEY-----")
+                         .replace("-----END PRIVATE KEY-----", "-----END RSA PRIVATE KEY-----");
+            }
+            
+            const signature = sign.sign(key, "base64");
+            const encodedSignature = signature.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
             
             const token = `${signatureInput}.${encodedSignature}`;
             
-            const data = JSON.stringify({
+            const postData = JSON.stringify({
                 grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
                 assertion: token,
             });
@@ -74,6 +86,7 @@ async function getAccessToken(): Promise<string | null> {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(postData),
                 },
             };
             
@@ -83,18 +96,29 @@ async function getAccessToken(): Promise<string | null> {
                 res.on("end", () => {
                     try {
                         const result = JSON.parse(body);
-                        resolve(result.access_token || null);
-                    } catch {
+                        if (result.access_token) {
+                            console.log("Got access token successfully");
+                            resolve(result.access_token);
+                        } else {
+                            console.log("No access token in response:", body);
+                            resolve(null);
+                        }
+                    } catch (e) {
+                        console.log("Failed to parse response:", e);
                         resolve(null);
                     }
                 });
             });
             
-            req.on("error", () => resolve(null));
-            req.write(data);
+            req.on("error", (e) => {
+                console.log("Request error:", e.message);
+                resolve(null);
+            });
+            
+            req.write(postData);
             req.end();
         } catch (e) {
-            console.log("Error signing JWT:", e);
+            console.log("Error creating JWT:", e);
             resolve(null);
         }
     });
@@ -190,7 +214,7 @@ export async function syncFromGoogleCalendar(): Promise<number> {
             return 0;
         }
         
-        console.log("Got access token, fetching calendar events...");
+        console.log("Fetching calendar events...");
         
         const calendar = google.calendar({ version: "v3" });
         const now = new Date();
@@ -207,6 +231,8 @@ export async function syncFromGoogleCalendar(): Promise<number> {
         });
 
         const events = response.data.items || [];
+        console.log(`Found ${events.length} events`);
+        
         let synced = 0;
 
         for (const event of events) {
