@@ -319,8 +319,16 @@ export async function createGoogleCalendarEvent(orderData: {
 
         const calendar = google.calendar({ version: "v3" });
 
-        const dateMatch = orderData.date?.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-        const timeMatch = orderData.time?.match(/(\d{2}):(\d{2})/);
+        let dateMatch = orderData.date?.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        
+        if (!dateMatch) {
+            dateMatch = orderData.date?.match(/(\d{2})\.(\d{2})/);
+            if (dateMatch) {
+                dateMatch[3] = String(new Date().getFullYear());
+            }
+        }
+        
+        const timeMatch = orderData.time?.match(/^(\d{2}):(\d{2})/);
         
         console.log("Creating event - date:", orderData.date, "time:", orderData.time);
         
@@ -331,9 +339,9 @@ export async function createGoogleCalendarEvent(orderData: {
 
         const startDateTime = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${timeMatch[1]}:${timeMatch[2]}:00`;
         
-        const endDateTime = orderData.time 
-            ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${Number(timeMatch[1]) + 1}:${timeMatch[2]}:00`
-            : startDateTime;
+        const timeEndMatch = orderData.time?.match(/-(\d{2}):(\d{2})/);
+        const endHour = timeEndMatch ? timeEndMatch[1] : String(Number(timeMatch[1]) + 1);
+        const endDateTime = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${endHour}:${timeEndMatch ? timeEndMatch[2] : timeMatch[2]}:00`;
 
         const description = [
             orderData.tariff ? `Тариф: ${orderData.tariff}` : null,
