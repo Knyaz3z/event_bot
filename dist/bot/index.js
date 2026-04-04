@@ -50,6 +50,6 @@ bot.start();
 startNotifications(bot);
 syncFromGoogleCalendar().then(count => {
     if (count > 0) {
-        console.log(`Synced ${count} events from Google Calendar on startup`);
+        console.log(`Google Calendar: synced ${count} events on startup`);
     }
 });

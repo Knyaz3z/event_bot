@@ -31,11 +31,9 @@ function base64UrlEncode(data: string | Buffer): string {
 
 async function getAccessToken(): Promise<string | null> {
     if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
-        console.log("Missing Google credentials");
+        console.log("Google Calendar: missing credentials");
         return null;
     }
-
-    console.log("Key length:", GOOGLE_PRIVATE_KEY.length);
 
     return new Promise((resolve) => {
         const now = Math.floor(Date.now() / 1000);
@@ -97,28 +95,28 @@ async function getAccessToken(): Promise<string | null> {
                     try {
                         const result = JSON.parse(body);
                         if (result.access_token) {
-                            console.log("Got access token successfully");
+                            console.log("Google Calendar: access token received");
                             resolve(result.access_token);
                         } else {
-                            console.log("No access token in response:", body);
+                            console.log("Google Calendar: no access token in response");
                             resolve(null);
                         }
                     } catch (e) {
-                        console.log("Failed to parse response:", e);
+                        console.log("Google Calendar: failed to parse response");
                         resolve(null);
                     }
                 });
             });
             
             req.on("error", (e) => {
-                console.log("Request error:", e.message);
+                console.log("Google Calendar: request error -", e.message);
                 resolve(null);
             });
             
             req.write(postData);
             req.end();
         } catch (e) {
-            console.log("Error creating JWT:", e);
+            console.log("Google Calendar: error creating JWT -", e);
             resolve(null);
         }
     });
@@ -201,20 +199,20 @@ function buildOrderText(data: any): string {
 
 export async function syncFromGoogleCalendar(): Promise<number> {
     if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
-        console.log("Google Calendar not configured");
+        console.log("Google Calendar: not configured");
         return 0;
     }
 
     try {
-        console.log("Getting access token...");
+        console.log("Google Calendar: getting access token...");
         const accessToken = await getAccessToken();
         
         if (!accessToken) {
-            console.log("Failed to get access token");
+            console.log("Google Calendar: failed to get access token");
             return 0;
         }
         
-        console.log("Fetching calendar events...");
+        console.log("Google Calendar: fetching events...");
         
         const calendar = google.calendar({ version: "v3" });
         const now = new Date();
@@ -234,7 +232,7 @@ export async function syncFromGoogleCalendar(): Promise<number> {
         });
 
         const events = response.data.items || [];
-        console.log(`Found ${events.length} events`);
+        console.log(`Google Calendar: found ${events.length} events`);
         
         let synced = 0;
 
@@ -272,10 +270,10 @@ export async function syncFromGoogleCalendar(): Promise<number> {
             synced++;
         }
 
-        console.log(`Synced ${synced} events from Google Calendar`);
+        console.log(`Google Calendar: synced ${synced} events`);
         return synced;
     } catch (error) {
-        console.error("Error syncing from Google Calendar:", error);
+        console.error("Google Calendar: sync error -", error);
         return 0;
     }
 }
