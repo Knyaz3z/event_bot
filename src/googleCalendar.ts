@@ -322,6 +322,8 @@ export async function createGoogleCalendarEvent(orderData: {
         const dateMatch = orderData.date?.match(/(\d{2})\.(\d{2})\.(\d{4})/);
         const timeMatch = orderData.time?.match(/(\d{2}):(\d{2})/);
         
+        console.log("Creating event - date:", orderData.date, "time:", orderData.time);
+        
         if (!dateMatch || !timeMatch) {
             console.log("Google Calendar: invalid date/time format");
             return null;
