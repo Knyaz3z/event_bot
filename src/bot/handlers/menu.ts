@@ -14,9 +14,22 @@ function buildFullOrderText(order: any): string {
     if (order.comment) parts.push(`Комментарий: ${order.comment}`);
     if (order.clientContact) parts.push(`Контакт клиента: ${order.clientContact}`);
     if (order.totalCost) parts.push(`Стоимость: ${order.totalCost}`);
-    if (order.remainingPayment) parts.push(`Остаток оплаты: ${order.remainingPayment}`);
+    if (order.advancePayment) parts.push(`Предоплата: ${order.advancePayment}`);
+    if (order.remainingPayment) parts.push(`Остаток: ${order.remainingPayment}`);
+    if (order.extension) parts.push(`Продление: ${order.extension}`);
     return parts.join("\n");
 }
+
+const ORDER_TEMPLATE = `Тариф: 
+Дата: 
+Время: 
+Адрес: 
+Кол-во: 
+Контакт клиента:
+Комментарий: 
+Предоплата:
+Остаток:
+Продление:`;
 
 function buildShortOrderText(order: any): string {
     const parts = [`№${order.id}`];
@@ -124,9 +137,17 @@ export function setupMenu(bot: Bot) {
         }
 
         await ctx.answerCallbackQuery();
-        await ctx.editMessageText("Отправь заказ одним сообщением 👇");
+        
+        await ctx.editMessageText(
+            `📝 Заполни шаблон и отправь боту 👇\n\n` + ORDER_TEMPLATE,
+            { reply_markup: new InlineKeyboard().text("📋 Скопировать шаблон", "copy_template") }
+        );
         
         waitingForOrderUsers.add(userId);
+    });
+
+    bot.callbackQuery("copy_template", async (ctx) => {
+        await ctx.answerCallbackQuery(ORDER_TEMPLATE);
     });
 
     bot.callbackQuery("menu_upcoming", async (ctx) => {
@@ -188,10 +209,20 @@ export function setupMenu(bot: Bot) {
     });
 
     bot.callbackQuery(/^delete_(\d+)$/, async (ctx) => {
-        const userId = ctx.from?.id;
-        if (!userId) return;
-
         const orderId = Number(ctx.match[1]);
+        
+        const order = await prisma.order.findUnique({ where: { id: orderId } });
+        
+        if (!order) {
+            return ctx.answerCallbackQuery({ text: "Заказ не найден", show_alert: true });
+        }
+        
+        if (order.googleEventId) {
+            return ctx.answerCallbackQuery({ 
+                text: "Удаление заказов из Google Calendar происходит там же. Удали событие в календаре и выполни команду /sync", 
+                show_alert: true 
+            });
+        }
         
         await prisma.orderHost.deleteMany({ where: { orderId } });
         await prisma.order.delete({ where: { id: orderId } });

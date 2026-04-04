@@ -23,6 +23,8 @@ function parseOrder(text) {
         people: get("Кол-во"),
         totalCost: getNumber("Стоимость"),
         remainingPayment: getNumber("Остаток"),
+        advancePayment: getNumber("Предоплата"),
+        extension: get("Продление"),
         slots: slotsVal >= 1 ? slotsVal : 1,
     };
 }
@@ -42,14 +44,16 @@ function buildOrderText(order) {
         parts.push(`Кол-во: ${order.people}`);
     if (order.comment)
         parts.push(`Комментарий: ${order.comment}`);
-    if (order.price)
-        parts.push(`Бюджет: ${order.price}`);
     if (order.clientContact)
-        parts.push(`Контакт: ${order.clientContact}`);
+        parts.push(`Контакт клиента: ${order.clientContact}`);
     if (order.totalCost)
         parts.push(`Стоимость: ${order.totalCost}`);
+    if (order.advancePayment)
+        parts.push(`Предоплата: ${order.advancePayment}`);
     if (order.remainingPayment)
         parts.push(`Остаток: ${order.remainingPayment}`);
+    if (order.extension)
+        parts.push(`Продление: ${order.extension}`);
     return parts.join("\n");
 }
 function buildPublicOrderText(order) {

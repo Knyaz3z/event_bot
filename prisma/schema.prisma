@@ -25,6 +25,8 @@ model Order {
   clientContact    String?
   totalCost        Float?
   remainingPayment Float?
+  advancePayment   Float?
+  extension        String?
 
   hosts OrderHost[]
 

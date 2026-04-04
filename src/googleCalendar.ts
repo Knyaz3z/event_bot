@@ -144,7 +144,9 @@ function parseGoogleEvent(event: any) {
     const people = extractField(description, "Кол-во");
     const clientContact = extractField(description, "Контакт");
     const totalCost = parseFloat(extractField(description, "Стоимость")?.replace(/[^\d.]/g, "") || "0") || null;
+    const advancePayment = parseFloat(extractField(description, "Предоплата")?.replace(/[^\d.]/g, "") || "0") || null;
     const remainingPayment = parseFloat(extractField(description, "Остаток")?.replace(/[^\d.]/g, "") || "0") || null;
+    const extension = extractField(description, "Продление");
     const slots = parseInt(extractField(description, "Ведущих") || "1") || 1;
     
     return {
@@ -159,7 +161,9 @@ function parseGoogleEvent(event: any) {
         people,
         clientContact,
         totalCost,
+        advancePayment,
         remainingPayment,
+        extension,
         slots,
         text: buildOrderText({
             date,
@@ -171,7 +175,9 @@ function parseGoogleEvent(event: any) {
             people,
             clientContact,
             totalCost,
+            advancePayment,
             remainingPayment,
+            extension,
         }),
     };
 }
@@ -191,9 +197,11 @@ function buildOrderText(data: any): string {
     if (data.address) parts.push(`Адрес: ${data.address}`);
     if (data.people) parts.push(`Кол-во: ${data.people}`);
     if (data.comment) parts.push(`Комментарий: ${data.comment}`);
-    if (data.clientContact) parts.push(`Контакт: ${data.clientContact}`);
+    if (data.clientContact) parts.push(`Контакт клиента: ${data.clientContact}`);
     if (data.totalCost) parts.push(`Стоимость: ${data.totalCost}`);
+    if (data.advancePayment) parts.push(`Предоплата: ${data.advancePayment}`);
     if (data.remainingPayment) parts.push(`Остаток: ${data.remainingPayment}`);
+    if (data.extension) parts.push(`Продление: ${data.extension}`);
     return parts.join("\n");
 }
 
@@ -261,7 +269,9 @@ export async function syncFromGoogleCalendar(): Promise<number> {
                     tariff: orderData.tariff,
                     clientContact: orderData.clientContact,
                     totalCost: orderData.totalCost,
+                    advancePayment: orderData.advancePayment,
                     remainingPayment: orderData.remainingPayment,
+                    extension: orderData.extension,
                     slots: orderData.slots,
                     status: "open",
                 },
