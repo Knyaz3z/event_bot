@@ -303,6 +303,7 @@ export async function createGoogleCalendarEvent(orderData: {
     advancePayment: number | null | undefined;
     remainingPayment: number | null | undefined;
     extension: string | null | undefined;
+    orderId?: number;
 }): Promise<string | null> {
     if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
         console.log("Google Calendar: not configured for writing");
@@ -344,6 +345,7 @@ export async function createGoogleCalendarEvent(orderData: {
         const endDateTime = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${endHour}:${timeEndMatch ? timeEndMatch[2] : timeMatch[2]}:00`;
 
         const description = [
+            orderData.orderId ? `ID заказа: ${orderData.orderId}` : null,
             orderData.date ? `Дата: ${orderData.date}` : null,
             orderData.time ? `Время: ${orderData.time}` : null,
             orderData.tariff ? `Тариф: ${orderData.tariff}` : null,
@@ -397,6 +399,7 @@ export async function updateGoogleCalendarEvent(googleEventId: string, orderData
     advancePayment: number | null | undefined;
     remainingPayment: number | null | undefined;
     extension: string | null | undefined;
+    orderId?: number;
 }): Promise<boolean> {
     if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL || !googleEventId) {
         console.log("Google Calendar: not configured or no event ID for update");
@@ -436,6 +439,7 @@ export async function updateGoogleCalendarEvent(googleEventId: string, orderData
         }
 
         const description = [
+            orderData.orderId ? `ID заказа: ${orderData.orderId}` : null,
             orderData.date ? `Дата: ${orderData.date}` : null,
             orderData.time ? `Время: ${orderData.time}` : null,
             orderData.tariff ? `Тариф: ${orderData.tariff}` : null,

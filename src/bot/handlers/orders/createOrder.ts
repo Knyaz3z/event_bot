@@ -35,6 +35,13 @@ export function setupCreateOrder(bot: Bot) {
         const text = ctx.message.text;
         const data = parseOrder(text);
 
+        const order = await prisma.order.create({
+            data: {
+                ...data,
+                text: formatOrderText(data),
+            },
+        });
+
         const googleEventId = await createGoogleCalendarEvent({
             date: data.date,
             time: data.time,
@@ -47,15 +54,15 @@ export function setupCreateOrder(bot: Bot) {
             advancePayment: data.advancePayment,
             remainingPayment: data.remainingPayment,
             extension: data.extension,
+            orderId: order.id,
         });
 
-        const order = await prisma.order.create({
-            data: {
-                ...data,
-                text: formatOrderText(data),
-                googleEventId: googleEventId,
-            },
-        });
+        if (googleEventId) {
+            await prisma.order.update({
+                where: { id: order.id },
+                data: { googleEventId },
+            });
+        }
 
         waitingForOrderUsers.delete(userId);
 

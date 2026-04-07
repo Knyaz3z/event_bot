@@ -96,6 +96,7 @@ export function setupEditOrder(bot: Bot) {
                 advancePayment: order.advancePayment as number | null | undefined,
                 remainingPayment: order.remainingPayment as number | null | undefined,
                 extension: order.extension,
+                orderId: order.id,
             });
         }
 
