@@ -126,15 +126,15 @@ export function setupMenu(bot: Bot) {
 
         await ctx.answerCallbackQuery();
 
-        await ctx.api.sendMessage(
-            userId,
-            "📝 Заполни шаблон и отправь боту 👇\n\n" + ORDER_TEMPLATE,
-            { parse_mode: "HTML" }
-        );
-        
         await ctx.editMessageText(
-            "Напиши /neworder и отправь заполненный шаблон",
-            { reply_markup: new InlineKeyboard().text("🔙 Назад", "menu_back") }
+            `📝 Заполни шаблон и отправь боту 👇\n\n`,
+        );
+
+        await ctx.editMessageText(
+            `\`\`\`\n${ORDER_TEMPLATE}\n\`\`\``,
+            {
+                parse_mode: 'MarkdownV2'
+            }
         );
         
         waitingForOrderUsers.add(userId);
