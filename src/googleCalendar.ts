@@ -384,3 +384,88 @@ export async function createGoogleCalendarEvent(orderData: {
         return null;
     }
 }
+
+export async function updateGoogleCalendarEvent(googleEventId: string, orderData: {
+    date: string | null | undefined;
+    time: string | null | undefined;
+    address: string | null | undefined;
+    tariff: string | null | undefined;
+    comment: string | null | undefined;
+    clientContact: string | null | undefined;
+    people: string | null | undefined;
+    totalCost: number | null | undefined;
+    advancePayment: number | null | undefined;
+    remainingPayment: number | null | undefined;
+    extension: string | null | undefined;
+}): Promise<boolean> {
+    if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL || !googleEventId) {
+        console.log("Google Calendar: not configured or no event ID for update");
+        return false;
+    }
+
+    try {
+        const accessToken = await getAccessToken();
+        
+        if (!accessToken) {
+            console.log("Google Calendar: failed to get access token for update");
+            return false;
+        }
+
+        const calendar = google.calendar({ version: "v3" });
+
+        let dateMatch = orderData.date?.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        
+        if (!dateMatch) {
+            dateMatch = orderData.date?.match(/(\d{2})\.(\d{2})/);
+            if (dateMatch) {
+                dateMatch[3] = String(new Date().getFullYear());
+            }
+        }
+        
+        const timeMatch = orderData.time?.match(/^(\d{2}):(\d{2})/);
+        
+        let startDateTime: string | undefined;
+        let endDateTime: string | undefined;
+        
+        if (dateMatch && timeMatch) {
+            startDateTime = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${timeMatch[1]}:${timeMatch[2]}:00`;
+            
+            const timeEndMatch = orderData.time?.match(/-(\d{2}):(\d{2})/);
+            const endHour = timeEndMatch ? timeEndMatch[1] : String(Number(timeMatch[1]) + 1);
+            endDateTime = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${endHour}:${timeEndMatch ? timeEndMatch[2] : timeMatch[2]}:00`;
+        }
+
+        const description = [
+            orderData.tariff ? `Тариф: ${orderData.tariff}` : null,
+            orderData.people ? `Кол-во: ${orderData.people}` : null,
+            orderData.comment ? `Комментарий: ${orderData.comment}` : null,
+            orderData.clientContact ? `Контакт: ${orderData.clientContact}` : null,
+            orderData.totalCost ? `Стоимость: ${orderData.totalCost}` : null,
+            orderData.advancePayment ? `Предоплата: ${orderData.advancePayment}` : null,
+            orderData.remainingPayment ? `Остаток: ${orderData.remainingPayment}` : null,
+            orderData.extension ? `Продление: ${orderData.extension}` : null,
+        ].filter(Boolean).join("\n");
+
+        await calendar.events.patch({
+            calendarId: GOOGLE_CALENDAR_ID,
+            eventId: googleEventId,
+            requestBody: {
+                summary: orderData.tariff || "Мероприятие",
+                description: description,
+                location: orderData.address || "",
+                start: startDateTime ? { dateTime: startDateTime, timeZone: "Europe/Moscow" } : undefined,
+                end: endDateTime ? { dateTime: endDateTime, timeZone: "Europe/Moscow" } : undefined,
+            },
+        }, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        console.log(`Google Calendar: updated event ${googleEventId}`);
+        return true;
+    } catch (error) {
+        console.error("Google Calendar: error updating event -", error);
+        return false;
+    }
+}

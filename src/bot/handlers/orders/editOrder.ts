@@ -3,6 +3,7 @@ import {prisma} from "../../index.js";
 import {formatFullOrderText, formatOrderText} from "../../utils/formatters.js";
 import {parseOrder} from "../../utils/parsers.js";
 import {waitingForEditUsers} from "./createOrder.js";
+import {updateGoogleCalendarEvent} from "../../../googleCalendar.js";
 
 export function setupEditOrder(bot: Bot) {
     bot.command("editorder", async (ctx) => {
@@ -81,7 +82,25 @@ export function setupEditOrder(bot: Bot) {
         });
 
         waitingForEditUsers.delete(userId);
-        await ctx.reply("Заказ обновлён ✅");
+
+        if (oldOrder.googleEventId) {
+            await updateGoogleCalendarEvent(oldOrder.googleEventId, {
+                date: order.date,
+                time: order.time,
+                address: order.address,
+                tariff: order.tariff,
+                comment: order.comment,
+                clientContact: order.clientContact,
+                people: order.people,
+                totalCost: order.totalCost,
+                advancePayment: order.advancePayment as number | null | undefined,
+                remainingPayment: order.remainingPayment as number | null | undefined,
+                extension: order.extension,
+            });
+        }
+
+        const googleMsg = oldOrder.googleEventId ? " и в Google Calendar ✅" : "";
+        await ctx.reply(`Заказ обновлён${googleMsg}`);
 
         for (const oh of order.hosts) {
             await ctx.api.sendMessage(
