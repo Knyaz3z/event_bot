@@ -1,5 +1,5 @@
-import { google } from "googleapis";
-import { PrismaClient } from "@prisma/client";
+import {google} from "googleapis";
+import {PrismaClient} from "@prisma/client";
 import crypto from "crypto";
 import https from "https";
 
@@ -344,6 +344,8 @@ export async function createGoogleCalendarEvent(orderData: {
         const endDateTime = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${endHour}:${timeEndMatch ? timeEndMatch[2] : timeMatch[2]}:00`;
 
         const description = [
+            orderData.date ? `Дата: ${orderData.date}` : null,
+            orderData.time ? `Время: ${orderData.time}` : null,
             orderData.tariff ? `Тариф: ${orderData.tariff}` : null,
             orderData.people ? `Кол-во: ${orderData.people}` : null,
             orderData.comment ? `Комментарий: ${orderData.comment}` : null,
