@@ -126,7 +126,7 @@ export function setupMenu(bot: Bot) {
 
         await ctx.answerCallbackQuery();
 
-        await ctx.editMessageText(
+        await ctx.reply(
             `📝 Заполни шаблон и отправь боту 👇\n\n`,
         );
 
