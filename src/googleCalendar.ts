@@ -436,6 +436,8 @@ export async function updateGoogleCalendarEvent(googleEventId: string, orderData
         }
 
         const description = [
+            orderData.date ? `Дата: ${orderData.date}` : null,
+            orderData.time ? `Время: ${orderData.time}` : null,
             orderData.tariff ? `Тариф: ${orderData.tariff}` : null,
             orderData.people ? `Кол-во: ${orderData.people}` : null,
             orderData.comment ? `Комментарий: ${orderData.comment}` : null,
