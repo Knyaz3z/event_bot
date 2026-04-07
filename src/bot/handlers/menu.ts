@@ -1,24 +1,9 @@
 import {Bot, InlineKeyboard} from "grammy";
 import {prisma} from "../index.js";
-import { waitingForOrderUsers, waitingForEditUsers } from "./createOrder.js";
+import {waitingForOrderUsers, waitingForEditUsers} from "./orders/createOrder.js";
+import {formatFullOrderText} from "../utils/formatters.js";
 
 const MANAGER_ID = Number(process.env.MANAGER_ID);
-
-function buildFullOrderText(order: any): string {
-    const parts = [];
-    if (order.tariff) parts.push(`Тариф: ${order.tariff}`);
-    if (order.date) parts.push(`Дата: ${order.date}`);
-    if (order.time) parts.push(`Время: ${order.time}`);
-    if (order.address) parts.push(`Адрес: ${order.address}`);
-    if (order.people) parts.push(`Кол-во: ${order.people}`);
-    if (order.comment) parts.push(`Комментарий: ${order.comment}`);
-    if (order.clientContact) parts.push(`Контакт клиента: ${order.clientContact}`);
-    if (order.totalCost) parts.push(`Стоимость: ${order.totalCost}`);
-    if (order.advancePayment) parts.push(`Предоплата: ${order.advancePayment}`);
-    if (order.remainingPayment) parts.push(`Остаток: ${order.remainingPayment}`);
-    if (order.extension) parts.push(`Продление: ${order.extension}`);
-    return parts.join("\n");
-}
 
 const ORDER_TEMPLATE = `Тариф: 
 Дата: 
@@ -201,7 +186,7 @@ export function setupMenu(bot: Bot) {
         const hasGoogleId = !!order.googleEventId;
 
         await ctx.editMessageText(
-            `📦 Заказ №${orderId}\n\n${buildFullOrderText(order)}\n\n👤 Ведущие: ${hostNames}`,
+            `📦 Заказ №${orderId}\n\n${formatFullOrderText(order)}\n\n👤 Ведущие: ${hostNames}`,
             {
                 reply_markup: buildOrderActionsKeyboard(orderId, hasGoogleId),
             }
@@ -273,7 +258,7 @@ export function setupMenu(bot: Bot) {
         }
 
         await ctx.editMessageText(
-            `Редактирование заказа №${orderId}\n\nТекущие данные:\n${order.text || buildFullOrderText(order)}\n\nОтправь новые данные (можно только изменяемые поля):`
+            `Редактирование заказа №${orderId}\n\nТекущие данные:\n${order.text || formatFullOrderText(order)}\n\nОтправь новые данные (можно только изменяемые поля):`
         );
     });
 
@@ -322,7 +307,7 @@ export function setupMenu(bot: Bot) {
 
         await ctx.api.sendMessage(
             host.telegramId,
-            `📢 Вам назначен заказ №${orderId}\n\n${buildFullOrderText(order)}\n\nПодтвердите:`,
+            `📢 Вам назначен заказ №${orderId}\n\n${formatFullOrderText(order)}\n\nПодтвердите:`,
             { reply_markup: keyboard }
         );
 
@@ -383,7 +368,7 @@ export function setupMenu(bot: Bot) {
 
         await ctx.api.sendMessage(
             MANAGER_ID,
-            `👤 Ведущий ${host.name} принял заказ №${orderId} (${newCount}/${order.slots})\n\n${buildFullOrderText(order)}`
+            `👤 Ведущий ${host.name} принял заказ №${orderId} (${newCount}/${order.slots})\n\n${formatFullOrderText(order)}`
         );
     });
 
@@ -457,7 +442,7 @@ export function setupMenu(bot: Bot) {
         }
 
         await ctx.editMessageText(
-            `Редактирование заказа №${orderId}\n\nТекущие данные:\n${order.text || buildFullOrderText(order)}\n\nОтправь новые данные:`
+            `Редактирование заказа №${orderId}\n\nТекущие данные:\n${order.text || formatFullOrderText(order)}\n\nОтправь новые данные:`
         );
     });
 
@@ -505,7 +490,7 @@ export function setupMenu(bot: Bot) {
             waitingForEditUsers.set(userId, orderId);
 
             await ctx.reply(
-                `Редактирование заказа №${orderId}\n\nТекущие данные:\n${order.text || buildFullOrderText(order)}\n\nОтправь новые данные:`
+                `Редактирование заказа №${orderId}\n\nТекущие данные:\n${order.text || formatFullOrderText(order)}\n\nОтправь новые данные:`
             );
             return;
         }

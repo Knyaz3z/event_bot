@@ -1,7 +1,9 @@
 import "dotenv/config";
 import {Bot} from "grammy";
 import {PrismaClient} from "@prisma/client";
-import {setupCreateOrder} from "./handlers/createOrder.js";
+import {setupCreateOrder} from "./handlers/orders/createOrder.js";
+import {setupEditOrder} from "./handlers/orders/editOrder.js";
+import {setupAcceptOrder} from "./handlers/orders/acceptOrder.js";
 import {setupMyOrders} from "./handlers/myOrders.js";
 import {setupReminders, startNotifications} from "./handlers/notifications.js";
 import {setupMenu} from "./handlers/menu.js";
@@ -38,6 +40,8 @@ setupMenu(bot);
 setupReminders(bot);
 setupMyOrders(bot);
 setupCreateOrder(bot);
+setupEditOrder(bot);
+setupAcceptOrder(bot);
 
 bot.command("sync", async (ctx) => {
     const userId = ctx.from?.id;
