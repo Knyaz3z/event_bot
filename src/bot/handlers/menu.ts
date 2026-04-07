@@ -1,6 +1,9 @@
 import {Bot, InlineKeyboard} from "grammy";
 import {prisma} from "../index.js";
-import {waitingForOrderUsers, waitingForEditUsers} from "./orders/createOrder.js";
+import {
+    waitingForEditUsers,
+    waitingForOrderUsers
+} from "./orders/createOrder.js";
 import {formatFullOrderText} from "../utils/formatters.js";
 
 const MANAGER_ID = Number(process.env.MANAGER_ID);
@@ -10,7 +13,7 @@ const ORDER_TEMPLATE = `Тариф:
 Время: 
 Адрес: 
 Кол-во: 
-Контакт клиента:
+Контакт:
 Комментарий: 
 Предоплата:
 Остаток:
