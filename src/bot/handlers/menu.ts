@@ -127,9 +127,10 @@ export function setupMenu(bot: Bot) {
         await ctx.answerCallbackQuery();
 
         await ctx.editMessageText(
-            `📝 Заполни шаблон и отправь боту 👇\n\n\`\`\`\n${ORDER_TEMPLATE}\n\`\`\``,
+            "📝 Заполни шаблон и отправь боту 👇\n\n" +
+            "<pre>" + ORDER_TEMPLATE + "</pre>",
             {
-                parse_mode: "Markdown",
+                parse_mode: "HTML",
                 reply_markup: new InlineKeyboard()
                     .text("📋 Скопировать шаблон", "copy_template")
             }
